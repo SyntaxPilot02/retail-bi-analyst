@@ -1,14 +1,11 @@
 from __future__ import annotations
 from typing import Dict
-
-from matplotlib import lines
-
 from analytics import KPIResult,RFMScores
 
 def generate_markdown_report(kpi: KPIResult, rfm: Dict[str, RFMScores]) -> str:
 
 
-
+    lines: list[str] = list()
 
     lines.append("#Sales report")
     lines.append("\n")
@@ -37,5 +34,8 @@ def generate_markdown_report(kpi: KPIResult, rfm: Dict[str, RFMScores]) -> str:
     lines.append("- Analyzing sales dynamics by product will help optimize product range and inventory.")
 
     return "\n".join(lines)
+
+
+
 
 

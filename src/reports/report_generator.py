@@ -10,7 +10,7 @@ import json
 
 import pandas as pd
 
-from src.analytics import KPIResult, RFMScores
+from src.analytics.analytics import KPIResult, RFMScores
 
 
 def generate_markdown_report(kpi: KPIResult, rfm: Dict[str, RFMScores]) -> str:

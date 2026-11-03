@@ -2,73 +2,115 @@
     Text and HTML report generator
 """
 
+# enable postponed evaluation of annotations
 from __future__ import annotations
 
+# import Dict and Tuple type and cast function for strict typing helpers
 from typing import Dict, List
+# import datetime type for working with timestamps
 from datetime import datetime
+# import json
+# Serialize data for inline JavaScript
 import json
+from html import escape
 
+# import pandas library
 import pandas as pd
 
+# import analytics dataclasses
 from src.analytics.analytics import KPIResult, RFMScores
 
 
+def _markdown_cell(value) -> str:
+    # Encode pipe rather than backslash-escape: even malicious backslashes stay harmless.
+    text = escape(str(value), quote=True).replace("\r\n", "\n").replace("\r", "\n")
+    for char in "\\`*_[]":
+        text = text.replace(char, f"&#{ord(char)};")
+    return text.replace("|", "&#124;").replace("\n", "<br>")
+
+
+def _script_json(value) -> str:
+    text = json.dumps(value, ensure_ascii=True, allow_nan=False)
+    return text.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+
+
+# function to generate Markdown formatted analytical executive summary report
 def generate_markdown_report(kpi: KPIResult, rfm: Dict[str, RFMScores]) -> str:
     """
     Generate markdown report from metrics.
     """
+    # initialize empty line for text assembly
     lines: list[str] = []
 
+    # append document header
     lines.append("# Sales report")
     lines.append("")
+
+    # append KPI summary section header
     lines.append("## Basic metrics (KPI)")
+
+    # format and append Key Performance Indicator bullet points
     lines.append(f"- Total revenue: **{kpi.total_revenue:,.2f}**")
     lines.append(f"- Average bill: **{kpi.avg_ticket:,.2f}**")
     lines.append(f"- Transactions counter: **{kpi.transactions_count}**")
     lines.append(f"- Unique customers: **{kpi.unique_customers}**")
     lines.append("")
 
+    # append RFM Analysis table section header
     lines.append("## RFM-analysis metrics")
     lines.append("")
+
+    # construct Markdown table header row
     lines.append("| Customer | Recency (days) | Frequency | Monetary | Segment |")
+    # construct Markdown table alignment delimiter
     lines.append("| -------- | -------------- | --------- | -------- | ------- |")
 
+    # iterate over customer and construct tabular detail rows
     for cid, scores in rfm.items():
         lines.append(
-            f"| {cid} | {scores.recency_days} | {scores.frequency} | "
-            f"{scores.monetary:,.2f} | {scores.segment} |"
+            f"| {_markdown_cell(cid)} | {_markdown_cell(scores.recency_days)} | {_markdown_cell(scores.frequency)} | "
+            f"{scores.monetary:,.2f} | {_markdown_cell(scores.segment)} |"
         )
-
     lines.append("")
+
+    # append insights and recommendations header
     lines.append("## Conclusions and recommendations")
     lines.append("")
 
+    # calculate total customer count evaluated in RFM analysis
     total_customers = len(rfm)
+    # check if dataset contains insufficient metrics for deep business insights
     if total_customers == 0 or kpi.transactions_count == 0 or kpi.total_revenue == 0:
         lines.append(
             "- The current dataset does not contain enough customer-level activity "
             "to support reliable segmentation. Focus on increasing data volume "
             "and observation period before drawing strategic conclusions."
         )
+        # returned combined Markdown text
         return "\n".join(lines)
 
+    # initialize segment distribution tally dictionary
     segment_counts: Dict[str, int] = {}
     for scores in rfm.values():
         segment_counts[scores.segment] = segment_counts.get(scores.segment, 0) + 1
 
+    # retrieve individual counts for key customer segments
     best_count = segment_counts.get("Best", 0)
     loyal_count = segment_counts.get("Loyal", 0)
     at_risk_count = segment_counts.get("At risk", 0)
     regular_count = segment_counts.get("Regular", 0)
 
+    # helper inline function to calculate percentage share of a segment
     def share(count: int) -> float:
         return (count / total_customers * 100.0) if total_customers > 0 else 0.0
 
+    # calculate percentage shares for each segment
     best_share = share(best_count)
     loyal_share = share(loyal_count)
     at_risk_share = share(at_risk_count)
     regular_share = share(regular_count)
 
+    # append general dataset overview summary sentence
     lines.append(
         f"- The analyzed period includes **{kpi.transactions_count}** transactions "
         f"from **{kpi.unique_customers}** unique customers, generating a total "
@@ -76,7 +118,7 @@ def generate_markdown_report(kpi: KPIResult, rfm: Dict[str, RFMScores]) -> str:
         f"**{kpi.avg_ticket:,.2f}**."
     )
 
-
+    # append recommendations tailored to the 'Best' customer segment if populated
     if best_count > 0:
         lines.append(
             f"- High-value buyers in the **Best** segment represent approximately "
@@ -85,6 +127,7 @@ def generate_markdown_report(kpi: KPIResult, rfm: Dict[str, RFMScores]) -> str:
             "new products to protect its contribution to revenue."
         )
 
+    # append warnings and advice for the 'At risk' customer segment if populated
     if at_risk_count > 0:
         lines.append(
             f"- Customers classified as **At risk** account for roughly "
@@ -94,6 +137,7 @@ def generate_markdown_report(kpi: KPIResult, rfm: Dict[str, RFMScores]) -> str:
             "potential revenue loss."
         )
 
+    # append growth strategy recommendations for the 'Loyal' customer segment if populated
     if loyal_count > 0:
         lines.append(
             f"- The **Loyal** segment, representing about **{loyal_share:.0f}%** "
@@ -102,6 +146,7 @@ def generate_markdown_report(kpi: KPIResult, rfm: Dict[str, RFMScores]) -> str:
             "higher-margin products can systematically lift their value."
         )
 
+    # append conversion guidance for 'Regular' customer segment if populated
     if regular_count > 0:
         lines.append(
             f"- Regular customers (~**{regular_share:.0f}%** of the base) provide "
@@ -110,21 +155,26 @@ def generate_markdown_report(kpi: KPIResult, rfm: Dict[str, RFMScores]) -> str:
             "to convert part of this group into Loyal buyers."
         )
 
+    # append strategic long-term segment tracking advice
     lines.append(
         "- Track how the distribution across Best, Loyal, Regular and At risk "
         "segments evolves over time. A shift towards Best and Loyal indicates "
         "effective retention and value management, while growth in At risk "
         "requires immediate corrective action."
     )
+
+    # append holistic BI action recommendation
     lines.append(
         "- Combine RFM trends with product-level analytics (top categories, "
         "margins, seasonality) to adjust pricing, assortment and service design "
         "in a data-driven way, rather than relying on intuition alone."
     )
 
+    # join lines with newlines into a single cohesive Markdown string
     return "\n".join(lines)
 
 
+# function to build an interactive HTML analytical web report dashboard
 def generate_html_report(
     kpi: KPIResult,
     rfm: Dict[str, RFMScores],
@@ -137,42 +187,49 @@ def generate_html_report(
     - KPI cards at the top.
     - Line chart: revenue by date.
     - Bar chart: customers by RFM segment.
-    - Embedded CSS and JS, opens in any browser without extra setup.
+    - Embedded CSS/data and JS; the existing Chart.js CDN requires network access for charts.
     """
     # --- Prepare data for charts ---
 
-    # Revenue by date (time series)
+    # extract time series daily revenue data if DataFrame contains mandatory fields
     if df is not None and not df.empty and "sale_date" in df.columns and "total_price" in df.columns:
+        # group revenue sum by sale date sorted chronologically
         revenue_series = (
             df.groupby("sale_date")["total_price"].sum().sort_index()
         )
+        # format dates as string for chart labels
         revenue_labels: List[str] = [
             d.strftime("%Y-%m-%d") if isinstance(d, datetime) else str(d)
             for d in revenue_series.index
         ]
+        # cast value to standard float primitives
         revenue_values: List[float] = [float(v) for v in revenue_series.values]
+        # retrieve latest recorded sale date string
         latest_date_str = revenue_labels[-1] if revenue_labels else ""
     else:
+        # fallback to empty lists if inputs are missing
         revenue_labels = []
         revenue_values = []
         latest_date_str = ""
 
-    # Customers by RFM segment
+    # tally customer RFM segment counts
     segment_counts: Dict[str, int] = {}
     for scores in rfm.values():
         segment_counts[scores.segment] = segment_counts.get(scores.segment, 0) + 1
 
+    # extract segment labels and quantities
     segment_labels: List[str] = list(segment_counts.keys())
     segment_values: List[int] = list(segment_counts.values())
 
-    # Serialize data for JS
-    json_revenue_labels = json.dumps(revenue_labels)
-    json_revenue_values = json.dumps(revenue_values)
-    json_segment_labels = json.dumps(segment_labels)
-    json_segment_values = json.dumps(segment_values)
+    # convert python lists into JSON string format for direct insertion into inline JS code
+    json_revenue_labels = _script_json(revenue_labels)
+    json_revenue_values = _script_json(revenue_values)
+    json_segment_labels = _script_json(segment_labels)
+    json_segment_values = _script_json(segment_values)
 
     # --- Build HTML ---
 
+    # construct complete standalone HTML page template with dynamic string interpolations
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -377,7 +434,7 @@ body {{
     </div>
     <div class="dashboard-meta">
       <span>Generated at: {datetime.now().strftime("%Y-%m-%d %H:%M")}</span>
-      <span>Data as of: {latest_date_str}</span>
+      <span>Data as of: {escape(latest_date_str, quote=True)}</span>
     </div>
   </header>
 
@@ -394,12 +451,12 @@ body {{
     </article>
     <article class="kpi-card">
       <div class="kpi-label">Transactions</div>
-      <div class="kpi-value">{kpi.transactions_count}</div>
+      <div class="kpi-value">{escape(str(kpi.transactions_count), quote=True)}</div>
       <div class="kpi-sub">Total number of sales</div>
     </article>
     <article class="kpi-card">
       <div class="kpi-label">Unique Customers</div>
-      <div class="kpi-value">{kpi.unique_customers}</div>
+      <div class="kpi-value">{escape(str(kpi.unique_customers), quote=True)}</div>
       <div class="kpi-sub">Distinct customers in the period</div>
     </article>
   </section>
@@ -442,19 +499,22 @@ body {{
       <tbody>
 """
 
-    # RFM table rows
+    # Dynamically build and format RFM customer table HTML rows
     for cid, scores in rfm.items():
-        segment_class = f"rfm-segment-{scores.segment.replace(' ', '_')}"
+        # replace spaces in segment names with underscores to construct safe CSS class name
+        segment_class = {"Best": "rfm-segment-Best", "Loyal": "rfm-segment-Loyal", "Regular": "rfm-segment-Regular", "At risk": "rfm-segment-At_risk"}.get(scores.segment, "rfm-segment-Regular")
+        # append HTML table row string
         html += (
             f"<tr>"
-            f"<td>{cid}</td>"
-            f"<td>{scores.recency_days}</td>"
-            f"<td>{scores.frequency}</td>"
+            f"<td>{escape(str(cid), quote=True)}</td>"
+            f"<td>{escape(str(scores.recency_days), quote=True)}</td>"
+            f"<td>{escape(str(scores.frequency), quote=True)}</td>"
             f"<td>${scores.monetary:,.2f}</td>"
-            f"<td class=\"{segment_class}\">{scores.segment}</td>"
+            f"<td class=\"{segment_class}\">{escape(str(scores.segment), quote=True)}</td>"
             f"</tr>\n"
         )
 
+    # append closing HTML elements and inline JS Chart.js initialization logic
     html += f"""      </tbody>
     </table>
   </section>
@@ -575,4 +635,5 @@ if (segmentCtx && segmentLabels.length > 0) {{
 </html>
 """
 
+    # return fully assembled HTML document string
     return html

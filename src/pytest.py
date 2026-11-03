@@ -1,4 +1,0 @@
-[pytest]
-qt_api = pyside6
-testpaths = tests
-pythonpath = .

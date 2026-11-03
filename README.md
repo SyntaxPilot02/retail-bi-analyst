@@ -213,7 +213,7 @@ pip install -r requirements.txt
 The requirements file includes:
 
 - `pandas` — data processing and analysis;
-- `numpy`  - for scientific computing
+- `numpy` —  for scientific computing;
 - `PySide6` — Qt‑based GUI toolkit;
 - `matplotlib` — charting and visualization (for extended versions of the project);
 - `pytest` — testing framework.
@@ -323,7 +323,7 @@ From the project root, execute:
 pytest
 ```
 
-Pytest will discover all test files named `test_*.py` and run them automatically.[cite:1]
+Pytest will discover all test files named `test_*.py` and run them automatically.
 
 ### What the Tests Cover
 

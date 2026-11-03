@@ -17,13 +17,13 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
 from src.config import REPORT_FILENAME, REPORT_HTML_FILENAME
-from data.data_loader import DataSourceConfig
-from data.repository import SalesFilter
-from services.services import AnalysisService, PreparedState, atomic_write
-from ui.table_models import data_model, kpi_model, rfm_model
-from ui.ui_view import MainWindowView
-from ui.workers import TaskThread
-from visualization.graphs import build_graph
+from src.data.data_loader import DataSourceConfig
+from src.data.repository import SalesFilter
+from src.services.services import AnalysisService, PreparedState, atomic_write
+from src.ui.table_models import data_model, kpi_model, rfm_model
+from src.ui.ui_view import MainWindowView
+from src.ui.workers import TaskThread
+from src.visualization.graphs import build_graph
 
 
 class MainWindow(MainWindowView):

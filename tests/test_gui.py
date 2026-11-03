@@ -3,9 +3,9 @@ import time
 import pytest
 from PySide6.QtCore import QDate, Qt
 from PySide6.QtWidgets import QMessageBox, QFileDialog, QAbstractItemView
-from data.data_loader import DataSourceConfig
-from ui.table_models import SORT_ROLE
-from ui.ui_main_window import MainWindow
+from src.data.data_loader import DataSourceConfig
+from src.ui.table_models import SORT_ROLE
+from src.ui.ui_main_window import MainWindow
 
 
 @pytest.fixture

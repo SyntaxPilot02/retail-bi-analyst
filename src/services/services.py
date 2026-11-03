@@ -7,10 +7,10 @@ import os
 import tempfile
 import numpy as np
 import pandas as pd
-from analytics.analytics import KPIResult, RFMScores, calculate_kpi_results, calculate_rfm_results
-from data.data_loader import DataLoader, DataSourceConfig
-from data.repository import SalesRepository, SalesFilter
-from reports.report_generator import generate_markdown_report, generate_html_report
+from src.analytics.analytics import KPIResult, RFMScores, calculate_kpi_results, calculate_rfm_results
+from src.data.data_loader import DataLoader, DataSourceConfig
+from src.data.repository import SalesRepository, SalesFilter
+from src.reports.report_generator import generate_markdown_report, generate_html_report
 
 
 @dataclass(frozen=True)

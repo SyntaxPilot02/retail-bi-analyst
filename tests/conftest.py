@@ -3,7 +3,7 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 os.environ.setdefault('QT_API', 'pyside6')
 import pandas as pd
 import pytest
-from data.data_loader import DataSourceConfig
+from src.data.data_loader import DataSourceConfig
 
 
 @pytest.fixture

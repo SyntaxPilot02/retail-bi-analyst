@@ -10,7 +10,7 @@ from typing import Optional
 
 import pandas as pd
 
-from data.validation import validate_schema, validate_sales_dataframe
+from src.data.validation import validate_schema, validate_sales_dataframe
 
 
 @dataclass

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Optional
 import pandas as pd
-from data.validation import parse_sale_date, validate_sales_dataframe
+from src.data.validation import parse_sale_date, validate_sales_dataframe
 
 
 @dataclass
